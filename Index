@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Urenregistratie & Tijdmanager</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --text-color: #1e293b;
+            --border-color: #e2e8f0;
+            --success: #16a34a;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        h1, h2 {
+            margin-top: 0;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .tab-btn {
+            padding: 10px 20px;
+            background-color: #e2e8f0;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: background 0.2s;
+        }
+
+        .tab-btn.active {
+            background-color: var(--primary);
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+            background: var(--card-bg);
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Form styling */
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+
+        input[type="date"],
+        input[type="number"],
+        input[type="text"],
+        textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 1rem;
+        }
+
+        .row {
+            display: flex;
+            gap: 15px;
+        }
+
+        .row .form-group {
+            flex: 1;
+        }
+
+        button.btn {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+
+        button.btn:hover {
+            background-color: var(--primary-hover);
+        }
+
+        button.btn-secondary {
+            background-color: #64748b;
+        }
+        button.btn-secondary:hover {
+            background-color: #475569;
+        }
+
+        /* Dashboard / Overzicht */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .stat-card {
+            background: #f1f5f9;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid var(--primary);
+        }
+
+        .stat-card h3 {
+            margin: 0 0 5px 0;
+            font-size: 0.85rem;
+            color: #64748b;
+            text-transform: uppercase;
+        }
+
+        .stat-card p {
+            margin: 0;
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        /* Tabel */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 0.95rem;
+        }
+
+        th {
+            background-color: #f8fafc;
+            font-weight: 600;
+        }
+
+        .actions-cell button {
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+
+        .actions-cell button:hover {
+            background: #dc2626;
+        }
+
+        /* Backup styling */
+        textarea {
+            font-family: monospace;
+            font-size: 0.85rem;
+            resize: vertical;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Urenregistratie & Reistijd</h1>
+
+    <!-- Tabs -->
+    <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('uursheet')">Uren & Overzicht</button>
+        <button class="tab-btn" onclick="switchTab('instellingen')">Instellingen & Back-ups</button>
+    </div>
+
+    <!-- TAB 1: Uren & Overzicht -->
+    <div id="uursheet" class="tab-content active">
+        <h2>Uren Invoeren</h2>
+        <form id="uurForm" onsubmit="voegUrenToe(event)">
+            <div class="row">
+                <div class="form-group">
+                    <label for="datum">Datum</label>
+                    <input type="date" id="datum" required>
+                </div>
+                <div class="form-group">
+                    <label for="project">Klus / Project</label>
+                    <input type="text" id="project" placeholder="Bijv. Klusnaam of adres" required>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="form-group">
+                    <label for="werkTijd">Werktijd op klus (uren)</label>
+                    <input type="number" id="werkTijd" step="0.25" min="0" placeholder="Bijv. 7.5" required>
+                </div>
+                <div class="form-group">
+                    <label for="reizenTijd">Reistijd eigen kosten (uren)</label>
+                    <input type="number" id="reizenTijd" step="0.25" min="0" placeholder="Bijv. 1.0" value="0">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="tussenReis">Reistijd tussen klussen (voor de baas, uren)</label>
+                <input type="number" id="tussenReis" step="0.25" min="0" placeholder="Bijv. 0.5" value="0">
+            </div>
+
+            <button type="submit" class="btn">Toevoegen</button>
+        </form>
+
+        <hr style="margin: 30px 0; border: 0; border-top: 1px solid var(--border-color);">
+
+        <h2>Voortgang & Overzicht</h2>
+        <div class="stats-grid">
+            <div class="stat-card">
+                <h3>Gewerkt deze week</h3>
+                <p id="statGewerkt">0.0 uur</p>
+            </div>
+            <div class="stat-card">
+                <h3>Doel per week</h3>
+                <p>40.0 uur</p>
+            </div>
+            <div class="stat-card">
+                <h3>Verschil met 40u</h3>
+                <p id="statBalans" style="color: var(--primary);">0.0 uur</p>
+            </div>
+            <div class="stat-card">
+                <h3>Eigen reistijd totaal</h3>
+                <p id="statEigenReis">0.0 uur</p>
+            </div>
+        </div>
+
+        <h3>Geregistreerde dagen</h3>
+        <div style="overflow-x: auto;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Datum</th>
+                        <th>Klus</th>
+                        <th>Werk (uur)</th>
+                        <th>Eigen reis (uur)</th>
+                        <th>Reis tussen (uur)</th>
+                        <th>Actie</th>
+                    </tr>
+                </thead>
+                <tbody id="urenTabelBody">
+                    <!-- Wordt dynamisch gevuld -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- TAB 2: Instellingen & Back-ups -->
+    <div id="instellingen" class="tab-content">
+        <h2>Back-up & Gegevensbeheer</h2>
+        <p>Hier kun je handmatig back-ups exporteren, direct per e-mail versturen of een eerdere back-up inladen.</p>
+
+        <div class="form-group">
+            <label for="jsonOutput">JSON Back-up Data</label>
+            <textarea id="jsonOutput" rows="6" readonly placeholder="Klik op 'Genereer Backup' om data te tonen..."></textarea>
+        </div>
+
+        <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 30px;">
+            <button class="btn btn-secondary" onclick="genereerBackup()">Genereer Backup</button>
+            <button class="btn" onclick="stuurEmailBackup()">Stuur Backup per E-mail</button>
+            <button class="btn btn-secondary" onclick="downloadJSON()">Download als Bestand</button>
+        </div>
+
+        <hr style="margin: 30px 0; border: 0; border-top: 1px solid var(--border-color);">
+
+        <h2>Backup Inladen (Herstellen)</h2>
+        <div class="form-group">
+            <label for="jsonInput">Plak hier je JSON-backup tekst:</label>
+            <textarea id="jsonInput" rows="6" placeholder="Plak hier de gekopieerde JSON-data om te herstellen..."></textarea>
+        </div>
+        <button class="btn" onclick="laadBackup()">Backup Inladen</button>
+    </div>
+</div>
+
+<script>
+    // Standaard datum op vandaag zetten
+    document.getElementById('datum').valueAsDate = new Date();
+
+    // Opslag key
+    const STORAGE_KEY = 'uren_registratie_data_rick';
+
+    function getUrenData() {
+        const data = localStorage.getItem(STORAGE_KEY);
+        return data ? JSON.parse(data) : [];
+    }
+
+    function saveUrenData(data) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        render();
+    }
+
+    function switchTab(tabId) {
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+
+        document.getElementById(tabId).classList.add('active');
+        event.currentTarget.classList.add('active');
+    }
+
+    function voegUrenToe(e) {
+        e.preventDefault();
+        const datum = document.getElementById('datum').value;
+        const project = document.getElementById('project').value;
+        const werkTijd = parseFloat(document.getElementById('werkTijd').value) || 0;
+        const reizenTijd = parseFloat(document.getElementById('reizenTijd').value) || 0;
+        const tussenReis = parseFloat(document.getElementById('tussenReis').value) || 0;
+
+        const urenLijst = getUrenData();
+        urenLijst.push({
+            id: Date.now(),
+            datum,
+            project,
+            werkTijd,
+            reizenTijd,
+            tussenReis
+        });
+
+        // Sorteer op datum aflopend
+        urenLijst.sort((a, b) => new Date(b.datum) - new Date(a.datum));
+
+        saveUrenData(urenLijst);
+
+        // Reset form velden behalve datum
+        document.getElementById('project').value = '';
+        document.getElementById('werkTijd').value = '';
+        document.getElementById('reizenTijd').value = '0';
+        document.getElementById('tussenReis').value = '0';
+        document.getElementById('project').focus();
+    }
+
+    function verwijderUur(id) {
+        if(confirm('Weet je zeker dat je deze invoer wilt verwijderen?')) {
+            let urenLijst = getUrenData();
+            urenLijst = urenLijst.filter(item => item.id !== id);
+            saveUrenData(urenLijst);
+        }
+    }
+
+    // Hulpfunctie om het weeknummer op te vragen
+    function getWeekNumber(d) {
+        d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+        d.setUTCDate(d.getUTCDate + 4 - (d.getUTCDay()||7));
+        var yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
+        var weekNo = Math.ceil((((d - yearStart) / 86400000) + 1)/7);
+        return [d.getUTCFullYear(), weekNo];
+    }
+
+    function render() {
+        const urenLijst = getUrenData();
+        const tbody = document.getElementById('urenTabelBody');
+        tbody.innerHTML = '';
+
+        let totaalGewerktHuidigeWeek = 0;
+        let totaalEigenReis = 0;
+
+        const huidigeDatum = new Date();
+        const huidigJaar = huidigeDatum.getFullYear();
+        // Simpele weekberekening op basis van huidige datum
+        function getWeek(dateObj) {
+            const janFirst = new Date(dateObj.getFullYear(), 0, 1);
+            return Math.ceil((((dateObj - janFirst) / 86400000) + janFirst.getDay() + 1) / 7);
+        }
+        const huidigeWeek = getWeek(huidigeDatum);
+
+        urenLijst.forEach(item => {
+            totaalEigenReis += item.reizenTijd;
+
+            // Check of de item in de huidige week valt
+            const itemDatum = new Date(item.datum);
+            if (itemDatum.getFullYear() === huidigJaar && getWeek(itemDatum) === huidigeWeek) {
+                totaalGewerktHuidigeWeek += item.werkTijd + item.tussenReis; // Tussen reizen is voor de baas, telt mee voor totale compensatie/uren, of puur werkTijd? Hier rekenen we werk + tussenreizen als declarabel/tijd voor de baas.
+            }
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${item.datum}</td>
+                <td>${escapeHtml(item.project)}</td>
+                <td>${item.werkTijd}</td>
+                <td>${item.reizenTijd}</td>
+                <td>${item.tussenReis}</td>
+                <td class="actions-cell"><button onclick="verwijderUur(${item.id})">Verwijder</button></td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+        document.getElementById('statGewerkt').innerText = totaalGewerktHuidigeWeek.toFixed(1) + ' uur';
+        document.getElementById('statEigenReis').innerText = totaalEigenReis.toFixed(1) + ' uur';
+
+        const balans = totaalGewerktHuidigeWeek - 40;
+        const balansEl = document.getElementById('statBalans');
+        balansEl.innerText = (balans >= 0 ? '+' : '') + balans.toFixed(1) + ' uur';
+        balansEl.style.color = balans >= 0 ? 'var(--success)' : 'var(--primary)';
+
+        // Update ook direct het backup textarea indien actief
+        genereerBackup();
+    }
+
+    function genereerBackup() {
+        const urenLijst = getUrenData();
+        const jsonString = JSON.stringify(urenLijst, null, 2);
+        document.getElementById('jsonOutput').value = jsonString;
+        return jsonString;
+    }
+
+    function stuurEmailBackup() {
+        const jsonString = genereerBackup();
+        if(!jsonString || jsonString === '[]') {
+            alert('Er zijn geen gegevens om te back-uppen.');
+            return;
+        }
+
+        const onderwerpregel = encodeURIComponent('Urenregistratie Backup - ' + new Date().toISOString().slice(0,10));
+        const ebody = encodeURIComponent('Hier is de JSON backup van mijn urenregistratie:\n\n' + jsonString);
+        
+        window.location.href = `mailto:?subject=${onderwerpregel}&body=${ebody}`;
+    }
+
+    function downloadJSON() {
+        const jsonString = genereerBackup();
+        const blob = new Blob([jsonString], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `uren_backup_${new Date().toISOString().slice(0,10)}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    function laadBackup() {
+        const inputVal = document.getElementById('jsonInput').value.trim();
+        if(!inputVal) {
+            alert('Plak eerst de JSON-data in het invoerveld.');
+            return;
+        }
+
+        try {
+            const geparseerd = JSON.parse(inputVal);
+            if(Array.isArray(geparseerd)) {
+                if(confirm('Weet je zeker dat je deze backup wilt inladen? Huidige gegevens worden overschreven.')) {
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(geparseerd));
+                    render();
+                    alert('Backup succesvol ingeladen!');
+                    document.getElementById('jsonInput').value = '';
+                }
+            } else {
+                alert('Ongeldig formaat: de JSON moet een lijst (array) met urenobjecten zijn.');
+            }
+        } catch (err) {
+            alert('Fout bij het parsen van de JSON. Controleer of de tekst correct is.');
+            console.error(err);
+        }
+    }
+
+    function escapeHtml(str) {
+        return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+    }
+
+    // Initieel laden bij opstarten
+    render();
+</script>
+
+</body>
+</html>
